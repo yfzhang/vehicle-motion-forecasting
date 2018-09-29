@@ -6,3 +6,5 @@ Work in progress.
 <a href="https://www.youtube.com/watch?v=8MsNonekdGo&t=1s" target="_blank">
   <img src="https://img.youtube.com/vi/8MsNonekdGo&t=1s/0.jpg" alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" />
 </a>
+
+[![Alt text for your video](https://img.youtube.com/vi/T-D1KVIuvjA/0.jpg)](http://www.youtube.com/watch?v=T-D1KVIuvjA)
