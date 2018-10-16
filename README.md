@@ -1,5 +1,14 @@
-## vehicle-motion-forecasting
-Work in progress.
+# vehicle-motion-forecasting
+## Work in progress.
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/8MsNonekdGo&t=1s/0.jpg)](https://www.youtube.com/watch?v=8MsNonekdGo&t=1s)
+This repository contains the training and inference code used in our paper *[Integrating kinematics and environment context into deep inverse reinforcement learning for predicting off-road vehicle trajectories]*. This work proposes a inverse reinforcement learning based framework that infers the reward structure and forecasts the vehicle's motion.
 
+[![video](https://img.youtube.com/vi/nuJjIdEEDBk/0.jpg)](https://www.youtube.com/watch?v=nuJjIdEEDBk)
+
+## Installation
+
+## Inference
+
+## Training
+
+## Citation
