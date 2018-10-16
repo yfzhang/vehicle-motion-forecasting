@@ -220,7 +220,7 @@ class OffroadGrid(object):
                 Q[s, a] = reward[next_s] + self.discount * value[next_s]
 
         Q -= Q.max(axis=1).reshape((self.n_states, 1))  # For numerical stability
-        Q = np.exp(Q*1) / np.exp(Q*1).sum(axis=1).reshape((self.n_states, 1))  # softmax over actions
+        Q = np.exp(Q*20) / np.exp(Q*20).sum(axis=1).reshape((self.n_states, 1))  # softmax over actions
         return Q
 
     def find_optimal_value(self, reward, thresh=0.005):

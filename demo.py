@@ -1,110 +1,86 @@
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
 import mdp.offroad_grid as offroad_grid
-import loader.offroad_loader as offroad_loader
-from torch.utils.data import DataLoader
 import numpy as np
-
-from network.hybrid_fcn import HybridFCN
 from network.hybrid_dilated import HybridDilated
-
 from torch.autograd import Variable
 import torch
-import os
-from tqdm import tqdm
+from os.path import join
 import scipy.io as sio
-import imageio
-import time
-
-def overlay(img, future_traj, past_traj):
-    overlay_img = img.copy()
-    for p in future_traj:
-        overlay_img[int(p[0]), int(p[1]), 0] = 255  # red
-        overlay_img[int(p[0]), int(p[1]), 1] = 255  # green
-        overlay_img[int(p[0]), int(p[1]), 2] = 255  # blue
-    for p in past_traj:
-        overlay_img[int(p[0]), int(p[1]), 0] = 255
-        overlay_img[int(p[0]), int(p[1]), 1] = 0
-        overlay_img[int(p[0]), int(p[1]), 2] = 0
-    return overlay_img
+from loader.util import leastsq_circle, calc_sign
+import seaborn as sns
+import viz
 
 
-def pred(feat, future_traj, net, n_states, model, grid_size, past_traj):
-    # n_sample = feat.shape[0]
-    # start = time.clock()
-    feat = feat.float()
-    feat_var = Variable(feat)
-    r_var = net(feat_var)
-
-    r_sample = r_var[0].data.numpy().squeeze().reshape(n_states)
-    future_traj_sample = future_traj[0].numpy()  # choose one sample from the batch
-    future_traj_sample = future_traj_sample[~np.isnan(future_traj_sample).any(axis=1)]  # remove appended NAN rows
-    future_traj_sample = future_traj_sample.astype(np.int64)
-    past_traj_sample = past_traj[0].numpy()  # choose one sample from the batch
-    past_traj_sample = past_traj_sample[~np.isnan(past_traj_sample).any(axis=1)]  # remove appended NAN rows
-    past_traj_sample = past_traj_sample.astype(np.int64)
-
-    values_sample = model.find_optimal_value(r_sample, 0.1)
-    policy = model.find_stochastic_policy(values_sample, r_sample)
-    svf_sample = model.find_svf_demo(future_traj_sample, policy, past_traj_sample)
-    # print('{} s'.format(time.clock()-start))
-    svf = svf_sample.reshape(grid_size, grid_size)
-    reward = r_var.data[0, 0].numpy()
-    return reward, svf
-
-
-# initialize param
+# initialize parameters
 grid_size = 80
 discount = 0.9
-
-exp = '6.34'
-resume='step940-loss0.720122159457321.pth'
-net = HybridDilated(feat_out_size=25, regression_hidden_size=64)
-
 model = offroad_grid.OffroadGrid(grid_size, discount)
 n_states = model.n_states
 n_actions = model.n_actions
 
-num = '2.1'
-
-loader = offroad_loader.OffroadLoader(grid_size=grid_size, train=False, demo='demo_data_{}'.format(num), tangent=False)
-#loader = offroad_loader.OffroadLoader(grid_size=grid_size, train=False, tangent=False)
-loader.data_list.sort()
-data_list = loader.data_list
-loader = DataLoader(loader, num_workers=1, batch_size=1, shuffle=False)
-data_normalization = sio.loadmat('/data/datasets/yanfu/irl_data/train-data-mean-std.mat')
-
+net = HybridDilated(feat_out_size=25, regression_hidden_size=64)
 net.init_weights()
-checkpoint = torch.load(os.path.join('exp', exp, resume))
-net.load_state_dict(checkpoint['net_state'])
+net.load_state_dict(torch.load(join('example_data', 'example_weights6.34.pth'))['net_state'])
 net.eval()
 
 
-root = os.path.join('paper_demo_viz_{}'.format(num), exp)
-print(root)
+def load(grid_size):
+    """ load sample demo input data"""
+    mean_std = sio.loadmat(join('example_data', 'data_mean_std.mat'))
+    data_mat = sio.loadmat(join('example_data', 'demo_input.mat'))
+    feat = data_mat['feat']
+    # pre-process environment input
+    feat[0] = (feat[0] - np.mean(feat[0])) / np.std(feat[0])  # normalize max-height feature locally (w.r.t. robot frame)
+    feat[1] = (feat[1] - mean_std['variance_mean']) / mean_std['variance_std']
+    feat[2] = (feat[2] - mean_std['red_mean']) / mean_std['red_std']
+    feat[3] = (feat[3] - mean_std['green_mean']) / mean_std['green_std']
+    feat[4] = (feat[4] - mean_std['blue_mean']) / mean_std['blue_std']
 
-if not os.path.exists(root):
-    os.makedirs(root)
+    # pre-process kinematic input
+    past_traj, future_traj = data_mat['past_traj'], data_mat['future_traj']
+    x, y = past_traj[:, 0], past_traj[:, 1]
+    xc, yc, r, _ = leastsq_circle(x, y)
+    curve_sign = calc_sign(x[0], y[0], x[-1], y[-1], xc, yc)
+    kappa = 1.0 / r * curve_sign * 10.0  # 10.0 is empirically selected by observing the histogram
+    feat = np.vstack((feat, np.full((1, grid_size, grid_size), kappa, dtype=np.float)))
 
-for step, (feat, past_traj, future_traj) in enumerate(loader):
-    start = time.clock()
-    feat = feat.float()
-    feat_var = Variable(feat)
-    r_var = net(feat_var)
-    r_sample = r_var[0].data.numpy().squeeze().reshape(n_states)
-    print('{} s: reward network'.format(time.clock()-start))
+    normalization = 0.5 * grid_size  # 0.5*grid_size is used for normalize vx, vy, coordinate layers
+    vx = (past_traj[-1, 0] - past_traj[0, 0]) / normalization
+    vy = (past_traj[-1, 1] - past_traj[0, 1]) / normalization
+    feat = np.vstack((feat, np.full((1, grid_size, grid_size), vx, dtype=np.float)))
+    feat = np.vstack((feat, np.full((1, grid_size, grid_size), vy, dtype=np.float)))
 
-    start2 = time.clock()
-    values_sample = model.find_optimal_value(r_sample, 0.5)
-    policy = model.find_stochastic_policy(values_sample, r_sample)
-    future_traj_sample = future_traj[0].numpy()  # choose one sample from the batch
-    future_traj_sample = future_traj_sample[~np.isnan(future_traj_sample).any(axis=1)]  # remove appended NAN rows
-    future_traj_sample = future_traj_sample.astype(np.int64)
-    past_traj_sample = past_traj[0].numpy()  # choose one sample from the batch
-    past_traj_sample = past_traj_sample[~np.isnan(past_traj_sample).any(axis=1)]  # remove appended NAN rows
-    past_traj_sample = past_traj_sample.astype(np.int64)
-    svf_sample = model.find_svf_demo(policy, past_traj_sample.shape[0])
-    svf = svf_sample.reshape(grid_size, grid_size)
-    print('{} s: find svf'.format(time.clock()-start2))
+    # coordinate layer
+    center_idx = grid_size / 2
+    delta_x_layer = np.zeros((1, grid_size, grid_size), dtype=np.float)
+    delta_y_layer = delta_x_layer.copy()
+    for x in range(grid_size):
+        for y in range(grid_size):
+            delta_x_layer[0, x, y] = x - center_idx
+            delta_y_layer[0, x, y] = y - center_idx
+    feat = np.vstack((feat, delta_x_layer / normalization))
+    feat = np.vstack((feat, delta_y_layer / normalization))
+
+    return feat, past_traj, future_traj
+
+feat, past_traj, future_traj = load(grid_size)
+print(feat.shape)
+feat_var = Variable(torch.from_numpy(np.expand_dims(feat, axis=0)).float())
+r_var = net(feat_var)
+
+# visualize input and output
+rgb = viz.feat2rgb(feat)
+rgb_with_path = viz.overlay(rgb, future_traj, past_traj)
+plt.imshow(rgb_with_path)
+plt.show()
+r = r_var[0].data.numpy().squeeze()
+sns.heatmap(r, cmap='viridis')
+plt.show()
+r_vector = r.reshape(n_states) # convert 2D reward matrix to a 1D vector
+value_vector = model.find_optimal_value(r_vector, 0.005)
+policy = model.find_stochastic_policy(value_vector, r_vector)
+past_traj_len = past_traj.shape[0]
+svf_vector = model.find_svf_demo(policy, past_traj_len)
+svf = np.log(svf_vector.reshape(grid_size, grid_size) + 1e-3)
+sns.heatmap(svf, cmap='viridis')
+plt.show()
