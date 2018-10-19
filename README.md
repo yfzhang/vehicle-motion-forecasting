@@ -14,7 +14,7 @@ source activate vehicle_motion_forecasting
 ```
 
 ### pip
-You can also you `pip` to install dependencies with the `requirements.txt` provided.
+You can also use `pip` to install dependencies with the `requirements.txt` provided.
 ```bash
 pip install -r requirements.txt
 ```
