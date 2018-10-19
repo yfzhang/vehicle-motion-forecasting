@@ -6,7 +6,7 @@ This repository contains the training and inference code used in our paper *[Int
 [![video](https://img.youtube.com/vi/nuJjIdEEDBk/0.jpg)](https://www.youtube.com/watch?v=nuJjIdEEDBk)
 
 ## Installation
-We recommend using *[Conda](https://conda.io/docs/)* to install dependecies using the `environment.yml` provided in this repository.
+We recommend using *[conda](https://conda.io/docs/)* to install dependecies with the `environment.yml` provided in this repository.
 ```bash
 conda env create -f environment.yml
 ```
