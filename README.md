@@ -6,15 +6,22 @@ This repository contains the training and inference code used in our paper *[Int
 [![video](https://img.youtube.com/vi/nuJjIdEEDBk/0.jpg)](https://www.youtube.com/watch?v=nuJjIdEEDBk)
 
 ## Installation
-We recommend using *[conda](https://conda.io/docs/)* to install dependecies with the `environment.yml` provided in this repository.
+### conda
+We recommend using *[conda](https://conda.io/docs/)* to install dependencies with the `environment.yml` provided in this repository.
 ```bash
 conda env create -f environment.yml
 source activate vehicle_motion_forecasting
 ```
 
+### pip
+You can also you `pip` to install dependencies with the `requirements.txt` provided.
+```bash
+pip install -r requirements.txt
+```
+
 ## Inference
 We provide the trained weights and example data for inference. Please check `demo.ipynb`.
-```
+```bash
 jupyter notebook demo.ipynb
 ```
 
