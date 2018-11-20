@@ -56,7 +56,7 @@ class HybridDilated(nn.Module):
     def init_weights(self):
         for name, mod in self.feat_block.named_children():
             if mod.__class__.__name__ == 'Conv2d':
-                nn.init.kaiming_normal(mod.weight, a=0)
+                nn.init.kaiming_normal_(mod.weight, a=0)
 
     def init_with_pre_train(self, checkpoint):
         pre_train = checkpoint['net_state']

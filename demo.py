@@ -12,7 +12,7 @@ import viz
 
 
 # initialize parameters
-grid_size = 80
+grid_size = 80 # local grid environment size
 discount = 0.9
 model = offroad_grid.OffroadGrid(grid_size, discount)
 n_states = model.n_states
@@ -20,14 +20,14 @@ n_actions = model.n_actions
 
 net = HybridDilated(feat_out_size=25, regression_hidden_size=64)
 net.init_weights()
-net.load_state_dict(torch.load(join('example_data', 'example_weights6.34.pth'))['net_state'])
+net.load_state_dict(torch.load(join('example_data', 'example_weights.pth'))['net_state'])
 net.eval()
 
 
-def load(grid_size):
+def load(grid_size, fname):
     """ load sample demo input data"""
     mean_std = sio.loadmat(join('example_data', 'data_mean_std.mat'))
-    data_mat = sio.loadmat(join('example_data', 'demo_input.mat'))
+    data_mat = sio.loadmat(join('example_data', fname))
     feat = data_mat['feat']
     # pre-process environment input
     feat[0] = (feat[0] - np.mean(feat[0])) / np.std(feat[0])  # normalize max-height feature locally (w.r.t. robot frame)
@@ -63,24 +63,26 @@ def load(grid_size):
 
     return feat, past_traj, future_traj
 
-feat, past_traj, future_traj = load(grid_size)
-print(feat.shape)
+feat, past_traj, future_traj = load(grid_size, 'example_input_narrow_trail.mat')
 feat_var = Variable(torch.from_numpy(np.expand_dims(feat, axis=0)).float())
-r_var = net(feat_var)
+r_var = net(feat_var) # forward reward inference
 
-# visualize input and output
+# visualize input: traj overlayed with top-down RGB
 rgb = viz.feat2rgb(feat)
-rgb_with_path = viz.overlay(rgb, future_traj, past_traj)
-plt.imshow(rgb_with_path)
+rgb_with_traj = viz.overlay(rgb, future_traj, past_traj)
+plt.imshow(rgb_with_traj)
 plt.show()
+
 r = r_var[0].data.numpy().squeeze()
 sns.heatmap(r, cmap='viridis')
 plt.show()
+
 r_vector = r.reshape(n_states) # convert 2D reward matrix to a 1D vector
-value_vector = model.find_optimal_value(r_vector, 0.005)
-policy = model.find_stochastic_policy(value_vector, r_vector)
 past_traj_len = past_traj.shape[0]
+value_vector = model.rtdp(r_vector, thresh=0.1)
+policy = model.find_stochastic_policy(value_vector, r_vector)
 svf_vector = model.find_svf_demo(policy, past_traj_len)
-svf = np.log(svf_vector.reshape(grid_size, grid_size) + 1e-3)
-sns.heatmap(svf, cmap='viridis')
+# svf = np.log(svf_vector.reshape(grid_size, grid_size) + 1e-3)
+# sns.heatmap(svf, cmap='viridis')
+sns.heatmap(svf_vector.reshape(grid_size, grid_size), cmap='viridis')
 plt.show()

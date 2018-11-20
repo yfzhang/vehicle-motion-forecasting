@@ -8,9 +8,11 @@ import math
 import random
 # import matplotlib.pyplot as plt
 from numba import jit
+import warnings
 
 import time
 from scipy.spatial.distance import directed_hausdorff
+
 
 class OffroadGrid(object):
     """
@@ -41,8 +43,8 @@ class OffroadGrid(object):
         self.rewards = None
         self.feat_mat = None
 
-        self.transit_table = self.create_transit_table()
-        self.start_idx = self.xy_to_idx((int(grid_size/2), int(grid_size/2)))
+        self.transit_table = self.create_transit_table()  # pre-compute transition table. can speed up a bit.
+        self.start_idx = self.xy_to_idx((int(grid_size / 2), int(grid_size / 2)))
 
     def __str__(self):
         return "OffroadGrid: grid_size {}, discount {}".format(self.grid_size, self.discount)
@@ -123,6 +125,7 @@ class OffroadGrid(object):
         :param traj_len: int, past traj length
         :return: numpy array, (n_states)
         """
+        start = time.clock()
         start_state = np.zeros(self.n_states)
         start_idx = self.xy_to_idx((40, 40))  # always start from the center (40,40)
         start_state[start_idx] = 1
@@ -134,11 +137,13 @@ class OffroadGrid(object):
                 for a in range(self.n_actions):
                     svf[self.transit_table[s, a], t] += (svf[s, t - 1] * policy[s, a])
 
+        print('find_svf_demo: took {:.2f} s'.format(time.clock() - start))
         return svf.sum(axis=1)
 
     def traj_sample(self, policy, traj_len, start_x, start_y):
         """
         """
+
         def select_action(s, policy, epsilon=0.0):
             prob = np.cumsum(policy[s])
             rand = random.random()
@@ -150,6 +155,7 @@ class OffroadGrid(object):
                 return 2
             else:
                 return 3
+
         step_count = 0
         current_idx = self.xy_to_idx((start_x, start_y))
         sample_traj = [[start_x, start_y]]
@@ -159,7 +165,6 @@ class OffroadGrid(object):
             sample_traj.append(self.idx_to_xy(current_idx))
             step_count += 1
         return sample_traj
-
 
     def find_svf_sample(self, traj, policy, n_samples=1e3, verbose=True):
         """
@@ -176,7 +181,7 @@ class OffroadGrid(object):
         while sample_count < n_samples:
             sample_traj = self.traj_sample(policy, traj_len, traj[0, 0], traj[0, 1])
             for state in sample_traj:
-                visitation_count[self.xy_to_idx((state[0],state[1]))] += 1
+                visitation_count[self.xy_to_idx((state[0], state[1]))] += 1
             sample_count += 1
             # print '  ===> ',self.compute_hausdorff_dist(traj, np.array(sample_traj))
         # print('find_svf_sample. took {} s'.format(time.time() - start))
@@ -200,11 +205,10 @@ class OffroadGrid(object):
         """
         hau_dist_all = 0.0
         for k in range(n_samples):
-            sample_traj = self.traj_sample(policy, demo_traj.shape[0], demo_traj[0,0], demo_traj[0,1])
+            sample_traj = self.traj_sample(policy, demo_traj.shape[0], demo_traj[0, 0], demo_traj[0, 1])
             hau_dist = self.compute_hausdorff_dist(demo_traj, sample_traj)
             hau_dist_all += hau_dist
-        return hau_dist_all/n_samples
-
+        return hau_dist_all / n_samples
 
     def find_stochastic_policy(self, value, reward):
         """
@@ -220,18 +224,18 @@ class OffroadGrid(object):
                 Q[s, a] = reward[next_s] + self.discount * value[next_s]
 
         Q -= Q.max(axis=1).reshape((self.n_states, 1))  # For numerical stability
-        Q = np.exp(Q*20) / np.exp(Q*20).sum(axis=1).reshape((self.n_states, 1))  # softmax over actions
+        Q = np.exp(Q * 20) / np.exp(Q * 20).sum(axis=1).reshape((self.n_states, 1))  # softmax over actions
         return Q
 
-    def find_optimal_value(self, reward, thresh=0.005):
+    def find_optimal_value(self, reward, thresh=0.005, max_iter=100):
         """
         find optimal value for each state, given rewards. with resetting goal state value to 0.
         :param reward: numpy array (n_states)
         :return:
         """
+        start = time.clock()
         value = np.zeros(self.n_states)
         step = 0
-        import warnings
         max_update = np.inf
         while max_update > thresh:
             max_update = 0.0
@@ -239,23 +243,22 @@ class OffroadGrid(object):
 
             for s in range(self.n_states):
                 next_s_list = [self.transit_table[s, a] for a in range(self.n_actions)]
-                r_list = [reward[s] + self.discount * value[ss] for ss in next_s_list]
-                new_v = max(r_list)
+                new_v = reward[s] + max([self.discount * value[ss] for ss in next_s_list])
 
                 # find the largest update through out the whole sweep over all states
                 max_update = max(max_update, abs(value[s] - new_v))
                 value[s] = new_v  # async update
 
-            if step > 1000:
+            if step > max_iter:
                 warnings.warn('value iteration does not converge', RuntimeWarning)
                 break
 
-        print('find_optimal_value. iteration {}, last update {}'.format(step, max_update))
+        print('find_optimal_value. iter {}, last update {:.2f}, took {:.2f} s'.format(step, max_update, time.clock() - start))
         return value
 
     def select_action(self, s, value, epsilon):
-        if random.random()>epsilon:
-            return random.randint(0, self.n_actions-1)
+        if random.random() > epsilon:
+            return random.randint(0, self.n_actions - 1)
         v_list = [0] * self.n_actions
         for ind, a in enumerate(range(self.n_actions)):
             s_next = self.transit_table[s, a]
@@ -263,19 +266,66 @@ class OffroadGrid(object):
             v_list[ind] = v_next
         pi = np.exp(np.array(v_list))
         pi = pi / np.sum(pi)
-        pi = np.exp(pi*10) / (np.exp(pi*10).sum())
+        pi = np.exp(pi * 10) / (np.exp(pi * 10).sum())
         randsample = random.random()
         pi_cum = np.cumsum(pi)
-        # import ipdb; ipdb.set_trace()
-
-        a_ind = np.where(pi_cum>randsample)[0][0]
-        # if a_ind is None:
-        #     import ipdb; ipdb.set_trace()
-        # print pi_cum,pi,v_list, randsample,a_ind
+        a_ind = np.where(pi_cum > randsample)[0][0]
         return a_ind
 
+    def greedy_action(self, s, reward, value):
+        best_state = s
+        best_value = -np.inf
+        for a in range(self.n_actions):
+            s_next = self.transit_table[s,a]
+            total = reward[s_next] + value[s_next]
+            if total >best_value:
+                best_value = total
+                best_state = s_next
+        return best_state
 
-    def find_optimal_value_mc(self, reward, horizon=50, gamma=0.9, thresh=0.001, epsilon=0.6):
+    def back_state(self, s, reward, value):
+        next_s_list = [self.transit_table[s, a] for a in range(self.n_actions)]
+        new_v = max([reward[s] + self.discount*value[ss] for ss in next_s_list])
+        return new_v
+
+    def update_value(self, value, traj, new_v_list, max_update):
+        for (s,new_v) in zip(traj, new_v_list):
+            max_update = max(max_update, abs(value[s]-new_v))
+            value[s] = new_v
+        return max_update
+
+    def rtdp(self, reward, thresh=0.1, max_iter=100, horizon=50):
+        value = np.zeros(self.n_states)
+        step = 0
+        max_update = np.inf
+        while max_update > thresh:
+            max_update = 0.0
+            s = self.start_idx
+            traj = [s]
+            for k in range(horizon-1):
+                s = self.greedy_action(s, reward, value)
+                traj.append(s)
+
+            new_v_list = []
+            for s in traj:
+                new_v_list.append(self.back_state(s, reward, value))
+
+            for (s, new_v) in zip(traj, new_v_list):
+                max_update = max(max_update, abs(value[s] - new_v))
+                value[s] = new_v
+
+            # new_v_array = np.asarray(new_v_list)
+            # max_update = value - new_v_array
+            # value = new_v_array
+            step += 1
+            if step > max_iter:
+                warnings.warn('value iteration does not converge', RuntimeWarning)
+                break
+
+        print('rtdp: iter {}, max_update {:.2f}'.format(step, max_update))
+        return value
+
+    def find_optimal_value_mc(self, reward, horizon=50, gamma=0.9, thresh=0.001, epsilon=0.99):
         """
         Using sample based method to solve the MDP
         find optimal value for each state, given rewards. with resetting goal state value to 0.
@@ -299,34 +349,30 @@ class OffroadGrid(object):
                 a = self.select_action(s, value, epsilon)
                 s_next = self.transit_table[s, a]
                 r = reward[s_next]
-                trajectory.append((s,a,s_next,r))
+                trajectory.append((s, a, s_next, r))
                 s = s_next
 
             r_cummulate = np.array([x[3] for x in trajectory])
-            r_cummulate -= r_cummulate.max() # change all the reward to negtive value
-            for k in range(horizon-2, -1, -1):
-                r_cummulate[k] += r_cummulate[k+1] * gamma
+            r_cummulate -= r_cummulate.max()  # change all the reward to negtive value
+            for k in range(horizon - 2, -1, -1):
+                r_cummulate[k] += r_cummulate[k + 1] * gamma
 
             # # debug
             # print r_cummulate
             # print [act[1] for act in trajectory]
 
-            for (s,a,s_next,r), r_cum in zip(trajectory, r_cummulate):
+            for (s, a, s_next, r), r_cum in zip(trajectory, r_cummulate):
                 visit_count[s] += 1
                 value_old = value[s]
                 # if visit_count[s]<100:
-                value_new = ((visit_count[s]-1)/float(visit_count[s]))*value[s] + 1.0/float(visit_count[s])*r_cum
+                value_new = ((visit_count[s] - 1) / float(visit_count[s])) * value[s] + 1.0 / float(visit_count[s]) * r_cum
                 # else: # favour new ones
                 #     value_new = 0.99*value[s] + 0.01*r_cum
                 # print 'updated value:', value_old, value_new, float(visit_count[s]), r_cum
                 value[s] = value_new
-                max_update = max(abs(value_old-value[s]), max_update)
+                max_update = max(abs(value_old - value[s]), max_update)
 
             max_update_all = max(max_update, max_update_all)
-
-
-            # import ipdb; ipdb.set_trace()
-
 
         print('find_optimal_value. iteration {}, max_update {}'.format(step, max_update_all))
 
@@ -403,10 +449,10 @@ class OffroadGrid(object):
     def create_transit_table(self):
         table = np.full((self.n_states, self.n_actions), np.nan, dtype=np.int)
         for s in range(self.n_states):
+            xi, yi = self.idx_to_xy(s)
             for a in range(self.n_actions):
-                xi, yi = self.idx_to_xy(s)
                 xj, yj = self.actions[a]
-                next_xy = np.array([xi + xj, yi + yj])
+                next_xy = np.asarray([xi + xj, yi + yj])
                 np.clip(next_xy, [0, 0], [self.grid_size - 1, self.grid_size - 1], out=next_xy)
                 next_s = self.xy_to_idx((next_xy[0], next_xy[1]))
                 table[s, a] = next_s
@@ -450,7 +496,6 @@ class OffroadGrid(object):
         nll = -math.log(prob) / demo_traj.shape[0]
         return nll
 
-
     @staticmethod
     def is_neighbour(i, k):
         """
@@ -479,3 +524,37 @@ class OffroadGrid(object):
         :return:
         """
         return p[0] * self.grid_size + p[1]
+
+    def find_optimal_value1(self, reward, size, thresh=0.005, max_iter=100):
+        """
+        find optimal value for each state, given rewards. with resetting goal state value to 0.
+        :param reward: numpy array (n_states)
+        :return:
+        """
+        start = time.clock()
+        value = np.zeros(self.n_states)
+        step = 0
+        max_update = np.inf
+        while max_update > thresh:
+            max_update = 0.0
+            step += 1
+
+            for s in range(self.n_states):
+                xi, yi = self.idx_to_xy(s)
+                new_v = value[s]
+                for a in range(self.n_actions):
+                    xj, yj = self.actions[a]
+                    next_xy = np.asarray([xi + xj, yi + yj])
+                    np.clip(next_xy, [0, 0], [size*2 - 1, size*2 - 1], out=next_xy)
+                    next_s = self.xy_to_idx((next_xy[0], next_xy[1]))
+                    new_v = max(new_v, reward[s] + self.discount * value[next_s])
+
+                max_update = max(max_update, abs(value[s] - new_v)) # find the largest update through out the whole sweep over all states
+                value[s] = new_v  # async update
+
+            if step > max_iter:
+                warnings.warn('value iteration does not converge', RuntimeWarning)
+                break
+
+        print('find_optimal_value. iter {}, last update {:.2f}, took {:.2f} s'.format(step, max_update, time.clock()-start))
+        return value
