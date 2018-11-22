@@ -229,6 +229,7 @@ class OffroadGrid(object):
         :param reward: numpy array (n_states)
         :return:
         """
+        start = time.clock()
         value = np.zeros(self.n_states)
         step = 0
         import warnings
@@ -239,8 +240,7 @@ class OffroadGrid(object):
 
             for s in range(self.n_states):
                 next_s_list = [self.transit_table[s, a] for a in range(self.n_actions)]
-                r_list = [reward[s] + self.discount * value[ss] for ss in next_s_list]
-                new_v = max(r_list)
+                new_v = reward[s] + max([self.discount * value[ss] for ss in next_s_list])
 
                 # find the largest update through out the whole sweep over all states
                 max_update = max(max_update, abs(value[s] - new_v))
@@ -250,7 +250,7 @@ class OffroadGrid(object):
                 warnings.warn('value iteration does not converge', RuntimeWarning)
                 break
 
-        print('find_optimal_value. iteration {}, last update {}'.format(step, max_update))
+        print('find_optimal_value. iter {}, last update {:.2f}, took {:.2f}'.format(step, max_update, time.clock()-start))
         return value
 
     def select_action(self, s, value, epsilon):

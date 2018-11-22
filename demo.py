@@ -77,7 +77,7 @@ r = r_var[0].data.numpy().squeeze()
 sns.heatmap(r, cmap='viridis')
 plt.show()
 r_vector = r.reshape(n_states) # convert 2D reward matrix to a 1D vector
-value_vector = model.find_optimal_value(r_vector, 0.005)
+value_vector = model.find_optimal_value(r_vector, 0.1)
 policy = model.find_stochastic_policy(value_vector, r_vector)
 past_traj_len = past_traj.shape[0]
 svf_vector = model.find_svf_demo(policy, past_traj_len)
