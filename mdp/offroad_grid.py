@@ -225,50 +225,13 @@ class OffroadGrid(object):
         Q = np.exp(Q*20) / np.exp(Q*20).sum(axis=1).reshape((self.n_states, 1))  # softmax over actions
         return Q
 
+
     def find_optimal_value(self, reward, thresh=0.005):
-        """
-        find optimal value for each state, given rewards. with resetting goal state value to 0.
-        :param reward: numpy array (n_states)
-        :return:
-        """
-        start_time = time.time()
-        value = np.zeros(self.n_states)
-        step = 0
-        import warnings
-        max_update = np.inf
-        while max_update > thresh:
-            max_update = 0.0
-            step += 1
-
-            for s in range(self.n_states):
-                next_s_list = [self.transit_table[s, a] for a in range(self.n_actions)]
-                r_list = [reward[s] + self.discount * value[ss] for ss in next_s_list]
-                new_v = max(r_list)
-
-                # find the largest update through out the whole sweep over all states
-                max_update = max(max_update, abs(value[s] - new_v))
-                value[s] = new_v  # async update
-
-            if step > 1000:
-                warnings.warn('value iteration does not converge', RuntimeWarning)
-                break
-        print('time taken: %.2f' %(time.time() - start_time))
-        # ipdb.set_trace()
-
-        value2 = self.find_optimal_value2(reward)
-        diff = np.sum([abs(value[i]-value2[i]) for i in range(len(value))])
-        print('diff: %.3f' %(diff))
-        ipdb.set_trace()
-        print('find_optimal_value. iteration {}, last update {}'.format(step, max_update))
-        return value
-
-    def find_optimal_value2(self, reward, thresh=0.005):
         sys.path.append("./mdp")
         import value_iteration
-        start_time = time.clock()
+        start = time.clock()
         value = value_iteration.compute(reward, self.n_states, self.discount, self.transit_table)
-        print('time taken: %.5f' %(time.clock() - start_time))
-        ipdb.set_trace()
+        print('find_optimal_value: tool {:.4f}'.format(time.clock()-start))
         return value
 
 
