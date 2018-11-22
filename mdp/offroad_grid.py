@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 np.set_printoptions(threshold=np.inf, precision=2)
 import logging
@@ -11,6 +12,7 @@ from numba import jit
 
 import time
 from scipy.spatial.distance import directed_hausdorff
+import ipdb
 
 class OffroadGrid(object):
     """
@@ -229,6 +231,7 @@ class OffroadGrid(object):
         :param reward: numpy array (n_states)
         :return:
         """
+        start_time = time.time()
         value = np.zeros(self.n_states)
         step = 0
         import warnings
@@ -249,9 +252,25 @@ class OffroadGrid(object):
             if step > 1000:
                 warnings.warn('value iteration does not converge', RuntimeWarning)
                 break
+        print('time taken: %.2f' %(time.time() - start_time))
+        # ipdb.set_trace()
 
+        value2 = self.find_optimal_value2(reward)
+        diff = np.sum([abs(value[i]-value2[i]) for i in range(len(value))])
+        print('diff: %.3f' %(diff))
+        ipdb.set_trace()
         print('find_optimal_value. iteration {}, last update {}'.format(step, max_update))
         return value
+
+    def find_optimal_value2(self, reward, thresh=0.005):
+        sys.path.append("./mdp")
+        import value_iteration
+        start_time = time.clock()
+        value = value_iteration.compute(reward, self.n_states, self.discount, self.transit_table)
+        print('time taken: %.5f' %(time.clock() - start_time))
+        ipdb.set_trace()
+        return value
+
 
     def select_action(self, s, value, epsilon):
         if random.random()>epsilon:
