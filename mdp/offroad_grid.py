@@ -228,6 +228,7 @@ class OffroadGrid(object):
 
     def find_optimal_value(self, reward, thresh=0.005):
         sys.path.append("./mdp")
+        ipdb.set_trace()
         import value_iteration
         start = time.clock()
         value = value_iteration.compute(reward, self.n_states, self.discount, self.transit_table)
