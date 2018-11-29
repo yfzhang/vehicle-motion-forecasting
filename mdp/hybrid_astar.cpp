@@ -5,6 +5,17 @@ using namespace std;
 
 namespace py = pybind11;
 
+class NodeCompare
+{
+public:
+    bool operator()(const Node * p1, 
+                    const Node * p2) const
+    {
+        return p1->f >= p2->f; // check this
+    }
+};
+
+
 class Pet {
     public:
         std::string name;
@@ -19,6 +30,13 @@ class Pet {
             return int_arr;
         }
 };
+
+class HybridAstar{
+    public:
+
+};
+
+
 
 PYBIND11_MODULE(hybrid_astar, m) {
     py::class_<Pet>(m, "Pet")
