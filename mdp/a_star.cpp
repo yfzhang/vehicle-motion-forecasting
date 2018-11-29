@@ -1,22 +1,18 @@
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <algorithm>
 // #include "planner_utils.cpp"
 #include <time.h>
 #include <queue>
 #include <unordered_map>
+//#include<bits/stdc++.h>
 
 #define NUMOFDIRS 8
+//#define INF INT_MAX
 
 using namespace std;
 
-class NodeCompare
-{
-public:
-    bool operator()(const AStarNode * p1, 
-                    const AStarNode * p2) const
-    {
-        return p1->f >= p2->f; // check this
-    }
-};
+namespace py = pybind11;
 
 class AStarNode {
     public:
@@ -30,7 +26,7 @@ class AStarNode {
         AStarNode(){
             this->parent = NULL;
             //ac = NULL;
-            this->g = INF; //check this
+            this->g = 1000000000; //check this
             this->h = 0;
             this->f = this->g+this->h;
         }
@@ -40,27 +36,41 @@ class AStarNode {
             this->y = _y;
         }
 
-        friend ostream& operator<<(ostream& os, const AStarNode& n)
-        {
-            os << endl;
-            os << x << " " << y << " " << z << " " << x_round << " " << y_round << " " << ang_round << endl;
-            return os;
+        // friend ostream& operator<<(ostream& os, const AStarNode& n)
+        // {
+        //     os << endl;
+        //     // os << x << " " << y << " " << z << " " << x_round << " " << y_round << " " << ang_round << endl;
+        //     return os;
+        // }
+
+        void update_f(){
+            this->f = this->g + this->h;
         }
 
-        // bool operator==(const Node& rhs) const
-        // {
-        //     if (this->conditions == rhs.conditions) return true;
-        //     else return false;
-        // }
+        bool operator==(const AStarNode& rhs) const
+        {
+            if (this->x == rhs.x && this->y == rhs.y) return true;
+            else return false;
+        }
 };
 
-struct NodeComparator
+class NodeCompare
 {
-    bool operator()(const AStarNode& lhs, const AStarNode& rhs) const
+public:
+    bool operator()(AStarNode * p1, 
+                    AStarNode * p2)
     {
-        return lhs == rhs; // need to check this how it works
+        return p1->f >= p2->f; // check this
     }
 };
+
+// struct NodeComparator
+// {
+//     bool operator()(const AStarNode& lhs, const AStarNode& rhs) const
+//     {
+//         return lhs == rhs; // need to check this how it works
+//     }
+// };
 
 struct NodeHasher2
 {
@@ -78,28 +88,29 @@ struct NodeHasher
 
 class AStar{
     public:
-        list<GroundedAction> plan;
-        vector<GroundedAction> all_grounded_actions;
         int path_size;
         AStarNode * start;
         AStarNode * goal;
         double collision_threshold;
 
+        vector<double> reward;
+        vector<pair<double, double>> plan;
+
         priority_queue<AStarNode*, vector<AStarNode*>, NodeCompare> open_nodes_queue;// check the declaration
-        unordered_map<AStarNode*, int, NodeHasher> closed_list;
-        unordered_map<AStarNode, int, NodeHasher2> open_nodes_map;
+        unordered_map<AStarNode*, double, NodeHasher> closed_list;
+        unordered_map<AStarNode, double, NodeHasher2> open_nodes_map;
 
-        int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
-        int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
+        double dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
+        double dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
 
-        AStar(vector<double> reward, double start_x, double start_y, double goal_x, double goal_y, double _collision_threshold){
+        AStar(vector<vector<double>> _reward, double start_x, double start_y, double goal_x, double goal_y, double _collision_threshold){
             // need to see how to interface with the reward and what inputs to take
             // initialize the vars here
             this->start = new AStarNode(start_x, start_y);
             this->goal = new AStarNode(goal_x, goal_y);
             this->collision_threshold = _collision_threshold;
 
-            this->start->h = compute_heuristic(this->start);
+            this->start->h = compute_heuristic(*this->start);
             this->start->g = 0;
             this->start->update_f();
 
@@ -107,13 +118,15 @@ class AStar{
             this->open_nodes_map[*(this->start)] = this->start->g; 
             // check this also, node comparison also have to see
 
+            for (int i=0; i< (int)_reward.size(); i++) this->reward.push_back(_reward[i]);
             cout<<"Initializing complete\n";
         }
 
         double compute_heuristic(AStarNode & n){
             // take the euclidean distance for now
             // check the sqrt and otehr things
-            return sqrt(sqr(n.x - this->goal.x) + sqr(n.y - this->goal.y));
+            return 0.;
+            // return sqrt(sqr(n.x - this->goal.x) + sqr(n.y - this->goal.y));
         }
 
         AStarNode * get_next_top(){
@@ -130,7 +143,7 @@ class AStar{
 
         bool is_goal(AStarNode & n){
             // assuming int vals in n and goal
-            if (n.x == this->goal.x && n.y == this->goal.y) return true;
+            if (n.x == this->goal->x && n.y == this->goal->y) return true;
             else return false;
         }
 
@@ -145,7 +158,7 @@ class AStar{
                 cur_node = cur_node->parent;
             }
             // plan.push_back(cur_node->ac);
-            reverse(plan.begin(), plan.end());
+            // reverse(plan.begin(), plan.end()); // check this also
             return plan;
         }
 
@@ -158,7 +171,7 @@ class AStar{
                 //cout<<"Working on "<<cur_node.x<<" "<<cur_node.y<<" "<<open_nodes_queue.size()<<endl;
                 if (is_goal(*cur_node)){
                     // make the plan
-                    this->plan = make_plan(cur_node);
+                    this->plan = make_final_plan(cur_node);
                     path_size = this->plan.size();
                     // add other metrics here
                     float time_taken = float( clock () - begin_time ) /  CLOCKS_PER_SEC;
@@ -181,7 +194,8 @@ class AStar{
                     double newx = cur_x + dX[dir];
                     double newy = cur_y + dY[dir];
 
-                    if (reward[newx][newy] <= this->collision_threshold){ // need to check how to convert from one frame to another
+                    // if (reward[newx][newy] <= this->collision_threshold){ // need to check how to convert from one frame to another
+                    if (this->reward[newx+newy] <= this->collision_threshold){ // fix this
 
                         AStarNode * new_x = new AStarNode(newx, newy);
 
@@ -225,7 +239,15 @@ class AStar{
 
 
 PYBIND11_MODULE(a_star, m) {
+    py::class_<AStarNode>(m, "AStarNode")
+        .def(py::init<>())
+        .def(py::init<double, double>())
+        .def("update_f", &AStarNode::update_f);
+
     py::class_<AStar>(m, "AStar")
         .def(py::init<const vector<double> &, double, double, double, double, double>())
+        .def("make_final_plan", &AStar::make_final_plan)
+        .def("is_goal", &AStar::is_goal)
+        .def("compute_heuristic", &AStar::compute_heuristic)
         .def("find_plan", &AStar::find_plan);
 }
