@@ -93,7 +93,7 @@ class AStar{
         AStarNode * goal;
         double collision_threshold;
 
-        vector<double> reward;
+        vector<vector<double>> reward;
         vector<pair<double, double>> plan;
 
         priority_queue<AStarNode*, vector<AStarNode*>, NodeCompare> open_nodes_queue;// check the declaration
@@ -194,8 +194,8 @@ class AStar{
                     double newx = cur_x + dX[dir];
                     double newy = cur_y + dY[dir];
 
-                    // if (reward[newx][newy] <= this->collision_threshold){ // need to check how to convert from one frame to another
-                    if (this->reward[newx+newy] <= this->collision_threshold){ // fix this
+                    if (reward[newx][newy] <= this->collision_threshold){ // need to check how to convert from one frame to another
+                    // if (this->reward[newx+newy] <= this->collision_threshold){ // fix this
 
                         AStarNode * new_x = new AStarNode(newx, newy);
 
@@ -245,7 +245,7 @@ PYBIND11_MODULE(a_star, m) {
         .def("update_f", &AStarNode::update_f);
 
     py::class_<AStar>(m, "AStar")
-        .def(py::init<const vector<double> &, double, double, double, double, double>())
+        .def(py::init<const vector<vector<double>> &, double, double, double, double, double>())
         .def("make_final_plan", &AStar::make_final_plan)
         .def("is_goal", &AStar::is_goal)
         .def("compute_heuristic", &AStar::compute_heuristic)
