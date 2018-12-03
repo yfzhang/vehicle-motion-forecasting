@@ -1,0 +1,121 @@
+INFO. 2018-11-29 00:23:39,534. Socket refused connection, running socketless
+INFO. 2018-11-29 00:25:50,326. Socket refused connection, running socketless
+INFO. 2018-11-29 00:30:07,601. Visdom successfully connected to server
+INFO. 2018-11-29 00:34:12,503. Visdom successfully connected to server
+INFO. 2018-11-29 00:44:17,026. Visdom successfully connected to server
+DEBUG. 2018-11-29 00:44:53,668. diff parser start
+DEBUG. 2018-11-29 00:44:53,668. diff parser calculated
+DEBUG. 2018-11-29 00:44:53,674. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 00:44:53,675. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 00:44:53,675. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 00:44:53,676. diff parser end
+DEBUG. 2018-11-29 00:44:55,897. diff parser start
+DEBUG. 2018-11-29 00:44:55,898. diff parser calculated
+DEBUG. 2018-11-29 00:44:55,898. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 00:44:55,899. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 00:44:55,901. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 00:44:55,902. diff parser end
+INFO. 2018-11-29 00:48:15,355. Visdom successfully connected to server
+INFO. 2018-11-29 00:49:25,975. Visdom successfully connected to server
+INFO. 2018-11-29 01:00:34,658. Visdom successfully connected to server
+INFO. 2018-11-29 01:00:37,019. Visdom successfully connected to server
+INFO. 2018-11-29 01:03:21,512. Visdom successfully connected to server
+INFO. 2018-11-29 01:04:17,952. Visdom successfully connected to server
+INFO. 2018-11-29 01:07:28,677. Visdom successfully connected to server
+INFO. 2018-11-29 01:09:52,525. Visdom successfully connected to server
+INFO. 2018-11-29 01:11:02,999. Visdom successfully connected to server
+INFO. 2018-11-29 13:33:48,769. Visdom successfully connected to server
+INFO. 2018-11-29 13:41:18,756. Visdom successfully connected to server
+INFO. 2018-11-29 13:41:34,242. Visdom successfully connected to server
+INFO. 2018-11-29 13:45:25,490. Visdom successfully connected to server
+INFO. 2018-11-29 14:15:27,885. Visdom successfully connected to server
+INFO. 2018-11-29 14:19:13,620. Visdom successfully connected to server
+INFO. 2018-11-29 14:20:07,004. Visdom successfully connected to server
+INFO. 2018-11-29 14:25:52,146. Visdom successfully connected to server
+INFO. 2018-11-29 14:29:39,854. Visdom successfully connected to server
+INFO. 2018-11-29 14:32:17,666. Visdom successfully connected to server
+INFO. 2018-11-29 14:33:05,536. Visdom successfully connected to server
+INFO. 2018-11-29 14:33:46,578. Visdom successfully connected to server
+INFO. 2018-11-29 14:37:41,014. Visdom successfully connected to server
+INFO. 2018-11-29 14:41:44,362. Visdom successfully connected to server
+INFO. 2018-11-29 14:42:26,160. Visdom successfully connected to server
+DEBUG. 2018-11-29 14:42:35,604. diff parser start
+DEBUG. 2018-11-29 14:42:35,605. diff parser calculated
+DEBUG. 2018-11-29 14:42:35,611. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 14:42:35,611. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 14:42:35,612. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 14:42:35,612. diff parser end
+DEBUG. 2018-11-29 14:42:35,617. pickle loaded: /home/yf/anaconda3/envs/py36_base/lib/python3.6/site-packages/torch/__init__.py
+DEBUG. 2018-11-29 14:42:36,450. diff parser start
+DEBUG. 2018-11-29 14:42:36,451. diff parser calculated
+DEBUG. 2018-11-29 14:42:36,451. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 14:42:36,451. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 14:42:36,451. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 14:42:36,451. diff parser end
+INFO. 2018-11-29 14:42:55,519. Visdom successfully connected to server
+INFO. 2018-11-29 14:49:33,754. Visdom successfully connected to server
+INFO. 2018-11-29 14:59:35,046. Visdom successfully connected to server
+INFO. 2018-11-29 15:01:24,330. Visdom successfully connected to server
+INFO. 2018-11-29 15:04:14,261. Visdom successfully connected to server
+INFO. 2018-11-29 15:05:42,498. Visdom successfully connected to server
+INFO. 2018-11-29 15:15:48,439. Visdom successfully connected to server
+DEBUG. 2018-11-29 15:16:01,238. diff parser start
+DEBUG. 2018-11-29 15:16:01,238. diff parser calculated
+DEBUG. 2018-11-29 15:16:01,238. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 15:16:01,253. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 15:16:01,254. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 15:16:01,254. diff parser end
+DEBUG. 2018-11-29 15:16:01,328. pickle loaded: /home/yf/anaconda3/envs/py36_base/lib/python3.6/site-packages/numpy/__init__.py
+DEBUG. 2018-11-29 15:16:04,583. diff parser start
+DEBUG. 2018-11-29 15:16:04,583. diff parser calculated
+DEBUG. 2018-11-29 15:16:04,583. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 15:16:04,584. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 15:16:04,584. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 15:16:04,585. diff parser end
+INFO. 2018-11-29 15:17:59,549. Visdom successfully connected to server
+DEBUG. 2018-11-29 15:18:12,088. diff parser start
+DEBUG. 2018-11-29 15:18:12,089. diff parser calculated
+DEBUG. 2018-11-29 15:18:12,089. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 15:18:12,089. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 15:18:12,089. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 15:18:12,089. diff parser end
+DEBUG. 2018-11-29 15:18:12,174. pickle loaded: /home/yf/anaconda3/envs/py36_base/lib/python3.6/site-packages/numpy/__init__.py
+DEBUG. 2018-11-29 15:18:13,689. diff parser start
+DEBUG. 2018-11-29 15:18:13,689. diff parser calculated
+DEBUG. 2018-11-29 15:18:13,689. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 15:18:13,694. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 15:18:13,694. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 15:18:13,695. diff parser end
+INFO. 2018-11-29 15:19:56,391. Visdom successfully connected to server
+INFO. 2018-11-29 15:20:29,804. Visdom successfully connected to server
+INFO. 2018-11-29 15:21:15,340. Visdom successfully connected to server
+INFO. 2018-11-29 15:22:44,175. Visdom successfully connected to server
+DEBUG. 2018-11-29 15:22:49,387. diff parser start
+DEBUG. 2018-11-29 15:22:49,388. diff parser calculated
+DEBUG. 2018-11-29 15:22:49,388. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 15:22:49,388. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 15:22:49,388. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 15:22:49,389. diff parser end
+DEBUG. 2018-11-29 15:22:49,393. pickle loaded: /home/yf/anaconda3/envs/py36_base/lib/python3.6/site-packages/torch/__init__.py
+DEBUG. 2018-11-29 15:22:50,313. diff parser start
+DEBUG. 2018-11-29 15:22:50,313. diff parser calculated
+DEBUG. 2018-11-29 15:22:50,313. diff: line_lengths old: 1, new: 1
+DEBUG. 2018-11-29 15:22:50,313. diff replace old[1:1] new[1:1]
+DEBUG. 2018-11-29 15:22:50,314. parse_part from 1 to 1 (to 0 in part parser)
+DEBUG. 2018-11-29 15:22:50,314. diff parser end
+INFO. 2018-11-29 15:23:28,886. Visdom successfully connected to server
+INFO. 2018-11-29 15:24:56,722. Visdom successfully connected to server
+INFO. 2018-11-29 15:26:14,467. Visdom successfully connected to server
+INFO. 2018-11-29 15:32:43,837. Visdom successfully connected to server
+INFO. 2018-11-29 15:34:31,982. Visdom successfully connected to server
+INFO. 2018-11-29 15:35:04,463. Visdom successfully connected to server
+INFO. 2018-11-29 18:59:39,317. Visdom successfully connected to server
+INFO. 2018-11-29 19:02:41,149. Visdom successfully connected to server
+INFO. 2018-11-29 19:21:38,648. Visdom successfully connected to server
+INFO. 2018-11-29 19:25:04,742. Visdom successfully connected to server
+INFO. 2018-11-29 19:28:19,092. Visdom successfully connected to server
+INFO. 2018-11-29 19:33:21,882. Visdom successfully connected to server
+INFO. 2018-11-29 19:36:47,036. Visdom successfully connected to server
+INFO. 2018-11-29 19:39:26,131. Visdom successfully connected to server
+INFO. 2018-11-29 19:44:49,312. Visdom successfully connected to server
+INFO. 2018-11-29 19:50:08,970. Visdom successfully connected to server

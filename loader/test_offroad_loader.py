@@ -5,18 +5,12 @@ from loader.offroad_loader import *
 import unittest
 import visdom
 import numpy as np
+from maxent_nonlinear_offroad import overlay_traj_to_map
 
 np.set_printoptions(threshold=np.inf)
 import logging
 import torch
-
-
-def overlay_traj_to_map(traj_idx, feat_map, value):
-    overlay_map = copy.deepcopy(feat_map)
-    logging.info('overlay_traj_to_map.\n traj_idx {}'.format(traj_idx))
-    for idx in traj_idx:
-        overlay_map[int(idx[0]), int(idx[1])] = value
-    return overlay_map
+from torch.utils.data import DataLoader
 
 
 class TestOffroadLoader(unittest.TestCase):
@@ -27,37 +21,38 @@ class TestOffroadLoader(unittest.TestCase):
     def test_dataset(self):
         grid_size = 60
         n_traj = 20
-        loader = OffroadLoader(grid_size=grid_size, n_traj=n_traj)
-        for idx in range(50):
-            feat, past_traj, future_traj = loader[0]  # the index does not matter. random sample inside loader
-            # self.vis.heatmap(X=feat[0], opts=dict(colormap='Electric', title='height_max. idx {}'.format(idx)))
-            # self.vis.heatmap(X=feat[1], opts=dict(colormap='Electric', title='height_var. idx {}'.format(idx)))
-            # overlay_map = overlay_traj_to_map(past_traj, feat[0], 3)
-            # overlay_map = overlay_traj_to_map(future_traj, overlay_map, 5)
-            # self.vis.heatmap(X=overlay_map, opts=dict(colormap='Electric', title='overlayed. idx {}'.format(idx)))
-            # self.vis.heatmap(X=feat[5], opts=dict(colormap='Electric', title='past_traj. idx {}'.format(idx)))
-            # self.vis.heatmap(X=feat[2], opts=dict(colormap='Electric', title='red. idx {}'.format(idx)))
-            # self.vis.heatmap(X=feat[3], opts=dict(colormap='Electric', title='green. idx {}'.format(idx)))
-            # self.vis.heatmap(X=feat[4], opts=dict(colormap='Electric', title='blue. idx {}'.format(idx)))
+        loader = OffroadLoader(grid_size=grid_size)
+        for idx in range(3):
+            feat, traj = loader[idx]  # the index does not matter. random sample inside loader
+            if check_connectivity(traj) is not True:
+                print("not connected")
 
     def test_loader(self):
         grid_size = 60
         n_traj = 10
-        loader = OffroadLoader(grid_size=grid_size, n_traj=n_traj, train=False)
+        loader = OffroadLoader(grid_size=grid_size)
         loader = DataLoader(loader, num_workers=1, batch_size=1, shuffle=True)
-        for idx, (feat, past_traj, future_traj) in enumerate(loader):
-            feat = torch.squeeze(feat,dim=0)
-            past_traj = torch.squeeze(past_traj,dim=0)
-            future_traj = torch.squeeze(future_traj,dim=0)
-            self.vis.heatmap(X=feat[0], opts=dict(colormap='Electric', title='height_max. idx {}'.format(idx)))
-            self.vis.heatmap(X=feat[1], opts=dict(colormap='Electric', title='height_var. idx {}'.format(idx)))
-            overlay_map = overlay_traj_to_map(past_traj, feat[0], 3)
-            overlay_map = overlay_traj_to_map(future_traj, overlay_map, 5)
-            self.vis.heatmap(X=overlay_map, opts=dict(colormap='Electric', title='overlayed. idx {}'.format(idx)))
-            self.vis.heatmap(X=feat[5], opts=dict(colormap='Electric', title='inferred_traj. idx {}'.format(idx)))
-            self.vis.heatmap(X=feat[2], opts=dict(colormap='Electric', title='red. idx {}'.format(idx)))
-            self.vis.heatmap(X=feat[3], opts=dict(colormap='Electric', title='green. idx {}'.format(idx)))
-            self.vis.heatmap(X=feat[4], opts=dict(colormap='Electric', title='blue. idx {}'.format(idx)))
+        # for idx, (feat, traj) in enumerate(loader):
+        #     if idx > 3:
+        #         break
+        #     feat = torch.squeeze(feat,dim=0)
+        #     self.vis.heatmap(X=feat[0], opts=dict(colormap='Electric', title='height_max. idx {}'.format(idx)))
+        #     self.vis.heatmap(X=feat[1], opts=dict(colormap='Electric', title='height_var. idx {}'.format(idx)))
+        #     self.vis.heatmap(X=feat[2], opts=dict(colormap='Electric', title='red. idx {}'.format(idx)))
+        #     self.vis.heatmap(X=feat[3], opts=dict(colormap='Electric', title='green. idx {}'.format(idx)))
+        #     self.vis.heatmap(X=feat[4], opts=dict(colormap='Electric', title='blue. idx {}'.format(idx)))
+        #     traj = torch.squeeze(traj,dim=0)
+        #     if check_connectivity(traj) is not True:
+        #         print("not connected")
+
+def check_connectivity(traj):
+    for i in range(traj.shape[0]-1):
+        [dx, dy] = traj[i+1]-traj[i]
+        if (abs(dx)+abs(dy)) != 1:
+            print(traj[i])
+            print(traj[i+1])
+            return False
+    return True
 
 
 if __name__ == '__main__':

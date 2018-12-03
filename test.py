@@ -30,7 +30,7 @@ net = HybridDilated(feat_out_size=25, regression_hidden_size=64)
 
 def rl(future_traj_sample, r_sample, model, grid_size):
     svf_demo_sample = model.find_demo_svf(future_traj_sample)
-    values_sample = model.find_optimal_value(r_sample, 0.01)
+    values_sample = model.find_optimal_value_cpp(r_sample, 0.01)
     policy = model.find_stochastic_policy(values_sample, r_sample)
     svf_sample = model.find_svf(future_traj_sample, policy)
     svf_diff_sample = svf_demo_sample - svf_sample
