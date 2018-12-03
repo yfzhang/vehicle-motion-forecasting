@@ -15,7 +15,6 @@ public:
     }
 };
 
-
 class Pet {
     public:
         std::string name;
@@ -35,8 +34,6 @@ class HybridAstar{
     public:
 
 };
-
-
 
 PYBIND11_MODULE(hybrid_astar, m) {
     py::class_<Pet>(m, "Pet")
