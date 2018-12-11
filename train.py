@@ -31,7 +31,7 @@ discount = 0.99
 lr = 5e-4
 n_epoch = 5
 batch_size = 1
-n_worker = 8
+n_worker = 1
 
 
 if not os.path.exists(os.path.join('exp', exp_name)):

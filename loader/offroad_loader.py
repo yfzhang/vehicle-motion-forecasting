@@ -69,17 +69,29 @@ class OffroadLoader(Dataset):
         return len(self.data_list)
 
     def correct_connection(self, traj):
-        for i in range(traj.shape[0]):
-            if (traj[i]==[40,40]).all():
-                [dx, dy] = traj[i]-traj[i-1]
-                if (abs(dx)+abs(dy)) != 1:
-                    traj = np.insert(traj, i, traj[i-1].copy()+[dx, 0], axis=0)
-                    break
-
         # for i in range(traj.shape[0]):
         #     if (traj[i]==[40,40]).all():
-        #         while (traj[i]==traj[i+1]).all():
-        #             traj = np.delete(traj, i, axis=0)
+        #         [dx, dy] = traj[i]-traj[i-1]
+        #         if (abs(dx)+abs(dy)) != 1:
+        #             traj = np.insert(traj, i, traj[i-1].copy()+[dx, 0], axis=0)
+        #             break
+        i = 0
+        while i < traj.shape[0]-1:
+            [dx, dy] = traj[i+1] - traj[i]
+            copy = traj[i+1].copy()
+            while (abs(dx)+abs(dy)) > 1:
+                if abs(dx) != 0:
+                    traj = np.insert(traj, i+1, copy - [np.sign(dx), 0], axis=0)
+                else:
+                    traj = np.insert(traj, i+1, copy - [0, np.sign(dy)], axis=0)
+                [dx, dy] = copy - traj[i+1]
+                i+=1
+            i+=1
+        i = 0
+        while i < traj.shape[0]-1:
+            while (traj[i]==traj[i+1]).all():
+                traj = np.delete(traj, i, axis=0)
+            i += 1
         return traj
 
     def auto_pad(self, traj):
