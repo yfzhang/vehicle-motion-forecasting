@@ -423,8 +423,9 @@ class OffroadGrid(object):
         for i in range(demo_traj.shape[0] - 1):
             action = self.get_action(demo_traj[i], demo_traj[i + 1])
             if action is None:
-                raise RuntimeError('no action can move from {} to {}'.format(demo_traj[i], demo_traj[i + 1]))
-
+                # raise RuntimeError('no action can move from {} to {}'.format(demo_traj[i], demo_traj[i + 1]))
+                warnings.warn('no action can move from {} to {}'.format(demo_traj[i], demo_traj[i + 1]))
+                return 0.0
             state = self.xy_to_idx((demo_traj[i, 0], demo_traj[i, 1]))
             prob *= policy[state, action]
 
