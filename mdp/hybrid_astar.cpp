@@ -203,6 +203,7 @@ class HybridAStar{
             for (double ang: this->turning_angles){
                 double new_theta = theta + v*tan(ang*M_PI/180.)/L;
                 new_theta = new_theta % (2*M_PI);
+                printf("old theta:%.2f, new theta:%.2f\n" %(theta*180./M_PI, new_theta*180./M_PI));
                 HybridAStarNode * new_node = new HybridAStarNode(new_x, new_y, new_theta, this->x_grid_size, this->y_grid_size, this->theta_grid_size);
                 successors.push_back(new_node);
             }
@@ -241,13 +242,13 @@ class HybridAStar{
 
                 for (HybridAStarNode * new_n: succ)
                 {
-                    double new_x = new_n->x;
-                    double new_y = new_n->y;
-                    double new_theta = new_n->theta;
+                    double new_x_discrete = new_n->x_discrete;
+                    double new_y_discrete = new_n->y_discrete;
+                    double new_theta_discrete = new_n->theta_discrete;
 
                     // if (reward[newx][newy] <= this->collision_threshold){ // need to check how to convert from one frame to another
                     // if (this->reward[newx+newy] <= this->collision_threshold){ // fix this
-                    if (new_x < 0 || new_x >= this->reward.size() ||  new_y < 0 || new_y >= this->reward.size()) continue;
+                    if (new_x_discrete < 0 || new_x_discrete >= this->reward.size() ||  new_y_discrete < 0 || new_y_discrete >= this->reward.size()) continue;
 
                     // HybridAStarNode * new_x = new HybridAStarNode(new_x, new_y, new_theta, this->x_grid_size, this->y_grid_size, this->theta_grid_size);
 
@@ -267,7 +268,7 @@ class HybridAStar{
                         // already there
                         pair<HybridAStarNode, double> found_elem = *(this->open_nodes_map.find(*new_n));
 
-                        if (found_elem.second > cur_node->g + this->reward[newx][newy]){
+                        if (found_elem.second > cur_node->g + this->reward[new_x_discrete][new_y_discrete]){
                             new_n->g = cur_node->g + this->reward[new_n->x_discrete][new_n->y_discrete];
                             new_n->h = compute_heuristic(*new_n);
                             new_n->update_f();
