@@ -51,7 +51,7 @@ class OffroadGrid(object):
 
     def load_feat(self, feat):
         """
-        Load feature matrix
+        load feature matrix
         self.feat_mat is defined as (feature_vector, grid_size, grid_size)
         :param feat:
         :return:
@@ -64,19 +64,6 @@ class OffroadGrid(object):
             self.feat_mat.append(feat_vector)
 
         self.feat_mat = np.stack(self.feat_mat, axis=0)
-
-    def find_feat_expect(self, traj):
-        """
-        Compute feature count based on demonstration trajectory and feature matrix
-        :param traj:
-        :return: feature counts (numpy array, same dimension as feature vector)
-        """
-        feat_expect = np.zeros(self.feat_mat.shape[-1])
-        for xy in traj:
-            idx = self.xy_to_idx((xy[0], xy[1]))
-            feat_expect += self.feat_mat[idx, :]
-
-        return feat_expect
 
     def find_demo_svf(self, traj):
         """
@@ -94,7 +81,6 @@ class OffroadGrid(object):
     def find_svf(self, traj, policy):
         """
         compute state visitation frequency given current optimal policy
-        it uses ground truth traj length as guide for how long it should propogate the policy into the future
 
         :param traj:
         :param policy: numpy array, (n_states, n_actions)
@@ -222,11 +208,13 @@ class OffroadGrid(object):
                 Q[s, a] = reward[next_s] + self.discount * value[next_s]
 
         Q -= Q.max(axis=1).reshape((self.n_states, 1))  # For numerical stability
-        Q = np.exp(Q*20) / np.exp(Q*20).sum(axis=1).reshape((self.n_states, 1))  # softmax over actions
+
+        k = 20 # amplify
+        Q = np.exp(Q*k) / np.exp(Q*k).sum(axis=1).reshape((self.n_states, 1))  # softmax over actions
         return Q
 
 
-    def find_optimal_value(self, reward, thresh=0.005):
+    def find_optimal_value_cpp(self, reward, thresh=0.005):
         sys.path.append("./mdp")
         ipdb.set_trace()
         import value_iteration
@@ -235,6 +223,40 @@ class OffroadGrid(object):
         print('find_optimal_value: tool {:.4f}'.format(time.clock()-start))
         return value
 
+    def find_optimal_value(self, reward, goal, thresh=0.005):
+        """
+        find optimal value for each state, given rewards. with resetting goal state value to 0.
+        :param reward: numpy array (n_states)
+        :param goal: numpy array [idx, idy]
+        :return:
+        """
+        start = time.clock()
+        value = np.zeros(self.n_states)
+        value.fill(-100)
+        step = 0
+        import warnings
+        max_update = np.inf
+        goal_idx = self.xy_to_idx(goal)
+        while max_update > thresh:
+            max_update = 0.0
+            step += 1
+            value[goal_idx] = 0
+            for s in range(self.n_states):
+                if s == goal_idx:
+                    continue
+                next_s_list = [self.transit_table[s, a] for a in range(self.n_actions)]
+                new_v = reward[s] + max([self.discount * value[ss] for ss in next_s_list])
+
+                # find the largest update through out the whole sweep over all states
+                max_update = max(max_update, abs(value[s] - new_v))
+                value[s] = new_v  # async update
+
+            if step > 500:
+                warnings.warn('value iteration does not converge', RuntimeWarning)
+                break
+
+        print('find_optimal_value. iter {}, last update {:.2f}, took {:.2f}'.format(step, max_update, time.clock() - start))
+        return value
 
     def select_action(self, s, value, epsilon):
         if random.random()>epsilon:
@@ -249,12 +271,8 @@ class OffroadGrid(object):
         pi = np.exp(pi*10) / (np.exp(pi*10).sum())
         randsample = random.random()
         pi_cum = np.cumsum(pi)
-        # import ipdb; ipdb.set_trace()
 
         a_ind = np.where(pi_cum>randsample)[0][0]
-        # if a_ind is None:
-        #     import ipdb; ipdb.set_trace()
-        # print pi_cum,pi,v_list, randsample,a_ind
         return a_ind
 
 
@@ -290,10 +308,6 @@ class OffroadGrid(object):
             for k in range(horizon-2, -1, -1):
                 r_cummulate[k] += r_cummulate[k+1] * gamma
 
-            # # debug
-            # print r_cummulate
-            # print [act[1] for act in trajectory]
-
             for (s,a,s_next,r), r_cum in zip(trajectory, r_cummulate):
                 visit_count[s] += 1
                 value_old = value[s]
@@ -307,23 +321,7 @@ class OffroadGrid(object):
 
             max_update_all = max(max_update, max_update_all)
 
-
-            # import ipdb; ipdb.set_trace()
-
-
         print('find_optimal_value. iteration {}, max_update {}'.format(step, max_update_all))
-
-        # # debug
-        # plt.subplot(221)
-        # plt.imshow(reward.reshape(self.grid_size, self.grid_size))
-        # plt.subplot(222)
-        # plt.imshow(value.reshape(self.grid_size, self.grid_size))
-        # plt.subplot(223)
-        # plt.imshow(np.log(visit_count).reshape(self.grid_size, self.grid_size))
-        # plt.subplot(224)
-        # plt.imshow()
-        # plt.show()
-
         return value
 
     def find_optimal_value_softmax(self, reward, traj):
@@ -425,13 +423,18 @@ class OffroadGrid(object):
         for i in range(demo_traj.shape[0] - 1):
             action = self.get_action(demo_traj[i], demo_traj[i + 1])
             if action is None:
-                raise RuntimeError('no action can move from {} to {}'.format(demo_traj[i], demo_traj[i + 1]))
-
+                # raise RuntimeError('no action can move from {} to {}'.format(demo_traj[i], demo_traj[i + 1]))
+                warnings.warn('no action can move from {} to {}'.format(demo_traj[i], demo_traj[i + 1]))
+                return 0.0
             state = self.xy_to_idx((demo_traj[i, 0], demo_traj[i, 1]))
             prob *= policy[state, action]
 
-        nll = -math.log(prob) / demo_traj.shape[0]
-        return nll
+        try:
+            nll = -math.log(prob) / demo_traj.shape[0]
+            return nll
+        except ValueError:
+            warnings.warn("math error happened to compute nll")
+            return 0.0
 
 
     @staticmethod

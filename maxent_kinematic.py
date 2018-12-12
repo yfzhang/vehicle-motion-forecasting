@@ -71,7 +71,7 @@ for _ in range(1):
 
         traj = torch.squeeze(future_traj, dim=0).numpy()
         svf_demo = model.find_demo_svf(traj)
-        values = model.find_optimal_value(r)
+        values = model.find_optimal_value_cpp(r)
         policy = model.find_stochastic_policy(values, r)
         svf = model.find_svf(traj, policy)
         svf_diff = svf_demo - svf

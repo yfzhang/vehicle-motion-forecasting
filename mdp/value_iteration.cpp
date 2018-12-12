@@ -4,7 +4,6 @@
 
 using namespace std;
 vector<double> compute(vector<double> reward, int n_states, double discount, vector<vector<double>> transit_table){
-
 	vector<double> value;
 	for(int i=0; i<n_states; i++) value.push_back(0.0);
 	int step = 0;

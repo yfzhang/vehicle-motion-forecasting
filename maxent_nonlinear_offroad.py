@@ -9,12 +9,12 @@ import torch
 from multiprocessing import Pool
 
 
-def overlay_traj_to_map(traj1, traj2, feat, value1=5.0, value2=10.0):
+def overlay_traj_to_map(traj, feat, value1=5.0, value2=10.0):
     overlay_map = feat.copy()
-    for i, p in enumerate(traj1):
+    for i, p in enumerate(traj):
         overlay_map[int(p[0]), int(p[1])] = value1
-    for i, p in enumerate(traj2):
-        overlay_map[int(p[0]), int(p[1])] = value2
+    # for i, p in enumerate(traj2):
+    #     overlay_map[int(p[0]), int(p[1])] = value2
     return overlay_map
 
 
@@ -49,21 +49,18 @@ def visualize_batch(past_traj, future_traj, feat, r_var, values, svf_diff_var, s
                     opts=dict(colormap='Greys', title='{}, step {}, SVF_diff'.format(mode, step)))
 
 
-def visualize(past_traj, future_traj, feat, r_var, values, svf_diff_var, step, vis, grid_size, train=True):
+def visualize(traj, feat, r_var, values, svf_diff_var, step, vis, grid_size, train=True):
     mode = 'train' if train else 'test'
 
-    future_traj_sample = future_traj[0].numpy()  # choose one sample from the batch
-    future_traj_sample = future_traj_sample[~np.isnan(future_traj_sample).any(axis=1)]  # remove appended NAN rows
-    future_traj_sample = future_traj_sample.astype(np.int64)
-    past_traj_sample = past_traj[0].numpy()  # choose one sample from the batch
-    past_traj_sample = past_traj_sample[~np.isnan(past_traj_sample).any(axis=1)]  # remove appended NAN rows
-    past_traj_sample = past_traj_sample.astype(np.int64)
+    traj_sample = traj[0].numpy()  # choose one sample from the batch
+    traj_sample = traj_sample[~np.isnan(traj_sample).any(axis=1)]  # remove appended NAN rows
+    traj_sample = traj_sample.astype(np.int64)
 
     vis.heatmap(X=feat[0, 0, :, :].float().view(grid_size, -1),
                 opts=dict(colormap='Electric', title='{}, step {} height max'.format(mode, step)))
 
     overlay_map = feat[0, 1, :, :].float().view(grid_size, -1).numpy()  # (grid_size, grid_size)
-    overlay_map = overlay_traj_to_map(past_traj_sample, future_traj_sample, overlay_map)
+    overlay_map = overlay_traj_to_map(traj_sample, overlay_map)
     vis.heatmap(X=overlay_map, opts=dict(colormap='Electric', title='{}, step {} height var'.format(mode, step)))
 
     vis.heatmap(X=feat[0, 3, :, :].float().view(grid_size, -1),
@@ -81,12 +78,30 @@ def visualize(past_traj, future_traj, feat, r_var, values, svf_diff_var, step, v
     #        vis.histogram(param.grad.data.view(-1), opts=dict(numbins=20))  # grads
 
 
-def rl(future_traj_sample, r_sample, model, grid_size):
+def rl_pred(future_traj_sample, r_sample, model, grid_size):
     svf_demo_sample = model.find_demo_svf(future_traj_sample)
-    values_sample = model.find_optimal_value(r_sample, 0.1)
+    values_sample = model.find_optimal_value_cpp(r_sample, 0.1)
     policy = model.find_stochastic_policy(values_sample, r_sample)
     svf_sample = model.find_svf(future_traj_sample, policy)
     svf_diff_sample = svf_demo_sample - svf_sample
+    # (1, n_feature, grid_size, grid_size)
+    svf_diff_sample = svf_diff_sample.reshape(1, 1, grid_size, grid_size)
+    svf_diff_var_sample = Variable(torch.from_numpy(svf_diff_sample).float(), requires_grad=False)
+    try:
+        nll_sample = model.compute_nll(policy, future_traj_sample)
+        print(nll_sample)
+        return nll_sample, svf_diff_var_sample, values_sample
+    except RuntimeError:
+        return 0, svf_diff_var_sample, values_sample
+
+
+def rl_planning(future_traj_sample, r_sample, model, grid_size):
+    svf_demo_sample = model.find_demo_svf(future_traj_sample)
+    values_sample = model.find_optimal_value(r_sample, future_traj_sample[-1].copy(), 0.1)
+    policy = model.find_stochastic_policy(values_sample, r_sample)
+    svf_sample = model.find_svf(future_traj_sample, policy)
+    svf_diff_sample = svf_demo_sample - svf_sample
+
     # (1, n_feature, grid_size, grid_size)
     svf_diff_sample = svf_diff_sample.reshape(1, 1, grid_size, grid_size)
     svf_diff_var_sample = Variable(torch.from_numpy(svf_diff_sample).float(), requires_grad=False)
@@ -108,7 +123,7 @@ def pred(feat, future_traj, net, n_states, model, grid_size):
         future_traj_sample = future_traj[i].numpy()  # choose one sample from the batch
         future_traj_sample = future_traj_sample[~np.isnan(future_traj_sample).any(axis=1)]  # remove appended NAN rows
         future_traj_sample = future_traj_sample.astype(np.int64)
-        result.append(pool.apply_async(rl, args=(future_traj_sample, r_sample, model, grid_size)))
+        result.append(pool.apply_async(rl_planning, args=(future_traj_sample, r_sample, model, grid_size)))
     pool.close()
     pool.join()
     # extract result and stack svf_diff
