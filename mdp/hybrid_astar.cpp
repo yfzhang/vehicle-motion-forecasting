@@ -20,7 +20,7 @@ class HybridAStarNode {
         // check what all params needed or not
         double x, y, theta;
         double x_discrete, y_discrete, theta_discrete;
-        double f,g,h;
+        double f, g, h;
         vector<HybridAStarNode *> children;
         HybridAStarNode * parent;
         // need to store the action also that got to this state
@@ -40,6 +40,7 @@ class HybridAStarNode {
             this->x_discrete = int(_x / _x_grid_size);
             this->y_discrete = int(_y / _y_grid_size);
             this->theta_discrete = int(_theta / _theta_grid_size);
+            printf("x, x_dis: %.2f, %d, %.2f, %d\n" %(_x, this->x_discrete, _y, this->y_discrete));
         }
 
         // friend ostream& operator<<(ostream& os, const AStarNode& n)
@@ -91,7 +92,7 @@ struct NodeHasher
 {
     size_t operator()(const HybridAStarNode* n) const{
         // return std::hash<int>()(n->x) ^ std::hash<int>()(n->y);
-        return std::hash<int>()((100000*n.theta) + (1000*n.x) + n.y); // check if this is symmetric for x and y
+        return std::hash<int>()((1000000*n.theta) + (1000*n.x) + n.y); // check if this is symmetric for x and y
     }
 };
 
@@ -112,13 +113,13 @@ class HybridAStar{
         double x_grid_size, y_grid_size, theta_grid_size;
 
         // for motion primitive
-        vector<double> turning_angles {0, 15, -15};
+        vector<double> turning_angles {0., 15., -15.};
 
         HybridAStar(vector<vector<double>> _reward, double start_x, double start_y, double start_theta, double goal_x, double goal_y, 
                     double goal_theta, double _x_grid_size, double _y_grid_size, double _theta_grid_size){
             // need to see how to interface with the reward and what inputs to take
             // initialize the vars here
-            cout<<_reward.size()<<" "<<_reward[0].size()<<endl;
+            // cout<<_reward.size()<<" "<<_reward[0].size()<<endl;
             this->start = new HybridAStarNode(start_x, start_y, start_theta);
             this->goal = new HybridAStarNode(goal_x, goal_y, goal_theta);
             // this->collision_threshold = _collision_threshold;
@@ -201,6 +202,7 @@ class HybridAStar{
             // need to add for reverse direction as well, for now its just forward
             for (double ang: this->turning_angles){
                 double new_theta = theta + v*tan(ang*M_PI/180.)/L;
+                new_theta = new_theta % (2*M_PI);
                 HybridAStarNode * new_node = new HybridAStarNode(new_x, new_y, new_theta, this->x_grid_size, this->y_grid_size, this->theta_grid_size);
                 successors.push_back(new_node);
             }
