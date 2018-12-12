@@ -69,12 +69,6 @@ class OffroadLoader(Dataset):
         return len(self.data_list)
 
     def correct_connection(self, traj):
-        # for i in range(traj.shape[0]):
-        #     if (traj[i]==[40,40]).all():
-        #         [dx, dy] = traj[i]-traj[i-1]
-        #         if (abs(dx)+abs(dy)) != 1:
-        #             traj = np.insert(traj, i, traj[i-1].copy()+[dx, 0], axis=0)
-        #             break
         i = 0
         while i < traj.shape[0]-1:
             [dx, dy] = traj[i+1] - traj[i]

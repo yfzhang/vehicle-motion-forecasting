@@ -46,12 +46,7 @@ import torch.nn as nn
 
 # sanity test. use a simple network.
 class PlanningNet(nn.Module):
-    """
-    Hybrid Dilated CNN with 3*3 filters
-    kinematic related information will be directly feed to higher layers
-    """
-
-    def __init__(self, feat_in_size=2, feat_out_size=1, viz=False):
+    def __init__(self, feat_in_size=5, feat_out_size=1, viz=False):
         super(PlanningNet, self).__init__()
         self.feat_in_size = feat_in_size
         self.viz = viz
