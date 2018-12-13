@@ -114,12 +114,14 @@ class HybridAStar{
         unordered_map<HybridAStarNode, double, NodeHasher2> open_nodes_map;
 
         double x_grid_size, y_grid_size, theta_grid_size;
+        double v, L, del_t;
 
         // for motion primitive
         vector<double> turning_angles {0., 15., -15.};
 
         HybridAStar(vector<vector<double>> _reward, double start_x, double start_y, double start_theta, double goal_x, double goal_y, 
-                    double goal_theta, double _x_grid_size, double _y_grid_size, double _theta_grid_size, double _collision_threshold){
+                    double goal_theta, double _x_grid_size, double _y_grid_size, double _theta_grid_size, double _collision_threshold,
+                    double _vel, double _L, double _del_t){
             // need to see how to interface with the reward and what inputs to take
             // initialize the vars here
             // cout<<_reward.size()<<" "<<_reward[0].size()<<endl;
@@ -139,6 +141,9 @@ class HybridAStar{
             this->y_grid_size = _y_grid_size;
             this->theta_grid_size = _theta_grid_size;
 
+            this->v = _vel;
+            this->L = _L;
+            this->del_t = _del_t;
             // for (int i=0; i< (int)_reward.size(); i++) this->reward.push_back(_reward[i]);
             //construct reward in proper way
             // cout<<"here2 "<<_reward.size()<<" "<<_reward[0].size()<<endl;
@@ -203,7 +208,7 @@ class HybridAStar{
             return plan;
         }
 
-        vector<HybridAStarNode*> get_successors(HybridAStarNode * n, double v=5., double L=2.5, double del_t = 0.3){
+        vector<HybridAStarNode*> get_successors(HybridAStarNode * n){
             double x = n->x, y = n->y, theta = n->theta;
 
             // cout<<"\nInside get successors\n";
@@ -211,11 +216,11 @@ class HybridAStar{
             vector<HybridAStarNode *> successors;
             // need to add for reverse direction as well, for now its just forward
             for (double ang: this->turning_angles){
-                double new_theta = theta + v*tan(ang*M_PI/180.)/L;
+                double new_theta = theta + this->v*tan(ang*M_PI/180.)/this->L;
                 new_theta = fmod(new_theta, 2.*M_PI);
                 double move_theta = (theta + new_theta)/2.;
-                double new_x_forward = x + cos(move_theta)*v*del_t;
-                double new_y_forward = y + cos(move_theta)*v*del_t;
+                double new_x_forward = x + cos(move_theta)*this->v*this->del_t;
+                double new_y_forward = y + cos(move_theta)*this->v*this->del_t;
                 cout<<"New forward succ: "<<new_x_forward<<" "<<new_y_forward<<" "<<new_theta*180./M_PI<<endl;
                 // printf("old theta:%.2f, new theta:%.2f\n", theta*180./M_PI, new_theta*180./M_PI);
                 HybridAStarNode * new_node_forward = new HybridAStarNode(new_x_forward, new_y_forward, new_theta, this->x_grid_size, this->y_grid_size, this->theta_grid_size);
@@ -223,8 +228,8 @@ class HybridAStar{
                 successors.push_back(new_node_forward);
 
 
-                double new_x_backward = x - cos(move_theta)*v*del_t;
-                double new_y_backward = y - cos(move_theta)*v*del_t;
+                double new_x_backward = x - cos(move_theta)*this->v*this->del_t;
+                double new_y_backward = y - cos(move_theta)*this->v*this->del_t;
                 // cout<<"New backward succ: "<<new_x_backward<<" "<<new_y_backward<<" "<<new_theta*180./M_PI<<endl;
                 HybridAStarNode * new_node_backward = new HybridAStarNode(new_x_backward, new_y_backward, new_theta, this->x_grid_size, this->y_grid_size, this->theta_grid_size);                
                 successors.push_back(new_node_backward);
@@ -280,6 +285,7 @@ class HybridAStar{
 
                     // is new_x in open, then use its g and update it, else g is inf
                     if (this->open_nodes_map.find(*new_n) == this->open_nodes_map.end()){
+                        cout<<"new_n dist: "<<compute_dist(*cur_node, *new_n)<<endl;
                         new_n->g = cur_node->g + compute_dist(*cur_node, *new_n); //this->reward[new_n->x_discrete][new_n->y_discrete]; // reward is also discretized
                         new_n->h = compute_heuristic(*new_n); // check this thing
                         new_n->update_f();
@@ -328,7 +334,7 @@ PYBIND11_MODULE(hybrid_astar, m) {
         .def("update_f", &HybridAStarNode::update_f);
 
     py::class_<HybridAStar>(m, "HybridAStar")
-        .def(py::init<const vector<vector<double>> &, double, double, double, double, double, double, double, double, double, double>())
+        .def(py::init<const vector<vector<double>> &, double, double, double, double, double, double, double, double, double, double, double, double, double>())
         .def("make_final_plan", &HybridAStar::make_final_plan)
         .def("is_goal", &HybridAStar::is_goal)
         .def("compute_heuristic", &HybridAStar::compute_heuristic)
