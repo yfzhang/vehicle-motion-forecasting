@@ -32,3 +32,28 @@ Training examples will be made available later after we open source the dataset.
 
 ## Citation
 Please consider citing the corresponding publication.
+```
+@InProceedings{pmlr-v87-zhang18a,
+  title = 	 {Integrating kinematics and environment context into deep inverse reinforcement learning for predicting off-road vehicle trajectories},
+  author = 	 {Zhang, Yanfu and Wang, Wenshan and Bonatti, Rogerio and Maturana, Daniel and Scherer, Sebastian},
+  booktitle = 	 {Proceedings of The 2nd Conference on Robot Learning},
+  pages = 	 {894--905},
+  year = 	 {2018},
+  editor = 	 {Billard, Aude and Dragan, Anca and Peters, Jan and Morimoto, Jun},
+  volume = 	 {87},
+  series = 	 {Proceedings of Machine Learning Research},
+  address = 	 {},
+  month = 	 {29--31 Oct},
+  publisher = 	 {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v87/zhang18a/zhang18a.pdf},
+  url = 	 {http://proceedings.mlr.press/v87/zhang18a.html},
+}
+```
+
+
+
+
+
+
+
+
