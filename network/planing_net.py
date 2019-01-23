@@ -56,7 +56,8 @@ class PlanningNet(nn.Module):
         # dilation rate combination [1, 2, 5] is recommended
         self.feat_block = nn.Sequential(
             nn.ReflectionPad2d(1),
-            nn.Conv2d(feat_in_size, 8, 3),
+            nn.Conv2d(feat_in_size, 8, 3),  Eigen::MatrixXd C(m, n);
+
             nn.ReLU(inplace=True),
             nn.ReflectionPad2d(1),
             nn.Conv2d(8, 8, 3),
